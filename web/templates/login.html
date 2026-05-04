@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SecureVision — Access Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --white:   #ffffff;
+    --off:     #f7f8fa;
+    --border:  #e4e7ec;
+    --border2: #c9d0db;
+    --text:    #0f1923;
+    --sub:     #5c6b7a;
+    --muted:   #9ba8b4;
+    --accent:  #1a56db;
+    --accent2: #1044b0;
+    --green:   #059669;
+    --orange:  #d97706;
+    --red:     #dc2626;
+    --shadow:  0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+    --shadow2: 0 2px 8px rgba(0,0,0,0.12), 0 8px 32px rgba(0,0,0,0.08);
+    --sans:    'Inter', sans-serif;
+    --mono:    'DM Mono', monospace;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--off);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 15px;
+  }
+
+  .logo-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-right {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .live-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.85)} }
+
+  /* Main */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .page-title {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .page-title h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.5px;
+    margin-bottom: 6px;
+  }
+
+  .page-title p {
+    font-size: 14px;
+    color: var(--sub);
+  }
+
+  /* Card */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  /* Camera */
+  .cam-section {
+    position: relative;
+    background: #0a0f16;
+    aspect-ratio: 4/3;
+  }
+
+  .cam-section img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* Face guide oval */
+  .face-guide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .face-oval {
+    width: 160px;
+    height: 200px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-radius: 50%;
+    position: relative;
+  }
+
+  .face-oval.scanning {
+    border-color: rgba(26,86,219,0.8);
+    animation: oval-scan 1.5s ease-in-out infinite;
+  }
+
+  @keyframes oval-scan {
+    0%,100%{ box-shadow: 0 0 0 0 rgba(26,86,219,0.3); }
+    50%{ box-shadow: 0 0 0 12px rgba(26,86,219,0); }
+  }
+
+  /* Scan line */
+  .scan-line {
+    position: absolute;
+    left: -2px; right: -2px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(26,86,219,0.9), transparent);
+    top: 0;
+    opacity: 0;
+  }
+
+  .scan-line.active {
+    opacity: 1;
+    animation: scan-move 1.4s ease-in-out infinite;
+  }
+
+  @keyframes scan-move {
+    0%  { top: 0;    opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100%{ top: 100%; opacity: 0; }
+  }
+
+  /* Camera label */
+  .cam-label {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: rgba(255,255,255,0.8);
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .rec-dot { width: 6px; height: 6px; border-radius: 50%; background: #ef4444; animation: pulse-dot 1s infinite; }
+
+  .cam-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+  }
+
+  /* Card body */
+  .card-body { padding: 24px; }
+
+  .scan-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.15s;
+    letter-spacing: 0.1px;
+  }
+
+  .scan-btn:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,86,219,0.3); }
+  .scan-btn:active { transform: translateY(0); }
+  .scan-btn:disabled { background: var(--muted); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-icon { font-size: 16px; }
+
+  /* Status */
+  .status {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+    min-height: 44px;
+    transition: all 0.2s;
+  }
+
+  .status.idle      { background: var(--off); color: var(--muted); border: 1px solid var(--border); }
+  .status.scanning  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+  .status.success   { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+  .status.error     { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+  .status.warning   { background: #fffbeb; color: var(--orange); border: 1px solid #fde68a; }
+
+  .status-icon { font-size: 16px; flex-shrink: 0; }
+
+  /* Capture preview */
+  .capture-wrap { margin-top: 16px; display: none; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .capture-wrap img { width: 100%; display: block; }
+  .capture-label { padding: 8px 12px; background: var(--off); font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  /* Divider */
+  .divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .divider span { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  /* Info pills */
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <div class="logo-icon">🔒</div>
+    <span class="logo-text">Secure<span>Vision</span></span>
+  </a>
+  <div class="header-right">
+    <div class="live-dot"></div>
+    <span id="h-clock">--:--:--</span>
+    &nbsp;·&nbsp; CAM-01
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <div class="page-title">
+      <h1>Biometric Access Control</h1>
+      <p>Facial recognition — position yourself in front of the camera</p>
+    </div>
+
+    <div class="card">
+      <div class="cam-section">
+        <img src="/video_feed_login" alt="Camera" id="cam-img">
+        <div class="face-guide">
+          <div class="face-oval" id="face-oval">
+            <div class="scan-line" id="scan-line"></div>
+          </div>
+        </div>
+        <div class="cam-label">
+          <div class="rec-dot"></div>
+          LIVE · CAM-01
+        </div>
+        <div class="cam-hint" id="cam-hint">Centre your face within the oval</div>
+      </div>
+
+      <div class="card-body">
+        <button class="scan-btn" id="scan-btn" onclick="doScan()">
+          <span class="btn-icon">◎</span>
+          <span id="btn-text">Scan Face</span>
+        </button>
+
+        <div class="status idle" id="status-box">
+          <span class="status-icon">○</span>
+          <span id="status-text">Ready — press Scan Face to authenticate</span>
+        </div>
+
+        <div class="capture-wrap" id="capture-wrap">
+          <img id="capture-img" src="" alt="Scan result">
+          <div class="capture-label">Watermarked capture · DCT + SHA-256</div>
+        </div>
+
+        <div class="divider"><span>System info</span></div>
+
+        <div class="pills">
+          <span class="pill">Deep Learning</span>
+          <span class="pill">DCT Watermark</span>
+          <span class="pill">SHA-256</span>
+          <span class="pill">GDPR Local</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer>SecureVision Surveillance Platform · GDPR Compliant · Local Storage Only</footer>
+
+<script>
+  // Clock
+  setInterval(() => {
+    document.getElementById('h-clock').textContent = new Date().toTimeString().slice(0,8);
+  }, 1000);
+
+  let scanning = false;
+
+  function setStatus(type, icon, text) {
+    const box  = document.getElementById('status-box');
+    const ico  = box.querySelector('.status-icon');
+    const txt  = document.getElementById('status-text');
+    box.className = 'status ' + type;
+    ico.textContent = icon;
+    txt.textContent = text;
+  }
+
+  async function doScan() {
+    if (scanning) return;
+    scanning = true;
+
+    const btn  = document.getElementById('scan-btn');
+    const oval = document.getElementById('face-oval');
+    const line = document.getElementById('scan-line');
+    const hint = document.getElementById('cam-hint');
+    const wrap = document.getElementById('capture-wrap');
+
+    btn.disabled = true;
+    document.getElementById('btn-text').textContent = 'Scanning...';
+    oval.classList.add('scanning');
+    line.classList.add('active');
+    hint.textContent = 'Analysing biometric data...';
+    setStatus('scanning', '◌', 'Processing facial recognition...');
+    wrap.style.display = 'none';
+
+    try {
+      const r    = await fetch('/api/scan', { method: 'POST' });
+      const data = await r.json();
+
+      oval.classList.remove('scanning');
+      line.classList.remove('active');
+
+      if (!data.success) {
+        setStatus('error', '○', data.error);
+        hint.textContent = 'Please try again';
+        reset(); return;
+      }
+
+      if (data.image_b64) {
+        document.getElementById('capture-img').src = 'data:image/jpeg;base64,' + data.image_b64;
+        wrap.style.display = 'block';
+      }
+
+      if (data.action === 'login') {
+        setStatus('success', '✓', `Access granted — welcome, ${data.name} (${data.confidence}% match)`);
+        hint.textContent = 'Redirecting to dashboard...';
+        setTimeout(() => window.location.href = '/dashboard', 1400);
+
+      } else if (data.action === 'denied') {
+        setStatus('warning', '△', `Access denied — ${data.name} is not authorised`);
+        hint.textContent = 'Alert triggered';
+        setTimeout(() => window.location.href = '/access_denied', 1600);
+
+      } else {
+        setStatus('error', '□', 'Unknown person — alarm raised');
+        hint.textContent = 'Alarm triggered';
+        setTimeout(() => window.location.href = '/alarm', 1600);
+      }
+
+    } catch(e) {
+      oval.classList.remove('scanning');
+      line.classList.remove('active');
+      setStatus('error', '○', 'Connection error — please retry');
+      reset();
+    }
+  }
+
+  function reset() {
+    scanning = false;
+    const btn = document.getElementById('scan-btn');
+    btn.disabled = false;
+    document.getElementById('btn-text').textContent = 'Scan Face';
+    document.getElementById('cam-hint').textContent = 'Centre your face within the oval';
+  }
+</script>
+</body>
+</html>

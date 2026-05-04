@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
     print("🔍 Extraction du message caché...\n")
 
-    message = extract("tatouee_20260411_225045.png")
+    message = extract("douaa.png")
 
     print(f"✅ Message extrait : '{message}'")
     print("\nPreuve d'authenticité confirmée ! 🔏")

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SecureVision — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --white:#ffffff;--off:#f7f8fa;--off2:#f0f2f5;
+  --border:#e4e7ec;--border2:#c9d0db;
+  --text:#0f1923;--sub:#5c6b7a;--muted:#9ba8b4;
+  --accent:#1a56db;--accent2:#1044b0;--accent-bg:#eff6ff;
+  --green:#059669;--green-bg:#f0fdf4;--green-bd:#bbf7d0;
+  --orange:#d97706;--orange-bg:#fffbeb;--orange-bd:#fde68a;
+  --red:#dc2626;--red-bg:#fef2f2;--red-bd:#fecaca;
+  --shadow:0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.06);
+  --sans:'Inter',sans-serif;--mono:'DM Mono',monospace;
+}
+body{font-family:var(--sans);background:var(--off);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* Header */
+header{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px}
+.logo-text{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-0.3px}
+.logo-text span{color:var(--accent)}
+.header-center{display:flex;align-items:center;gap:8px}
+.user-chip{background:var(--green-bg);border:1px solid var(--green-bd);border-radius:20px;padding:3px 12px;font-size:12px;color:var(--green);font-weight:500;display:flex;align-items:center;gap:6px}
+.user-chip::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green)}
+.header-right{display:flex;align-items:center;gap:12px}
+.clock{font-family:var(--mono);font-size:13px;color:var(--sub)}
+.session-wrap{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub)}
+.session-bar-track{width:70px;height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+.session-bar{height:100%;background:var(--green);border-radius:2px;transition:width 1s linear,background .5s}
+.btn-sm{padding:5px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid;font-family:var(--sans);transition:all .15s}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--sub)}
+.btn-ghost:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+
+/* Warn overlay */
+.warn-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(15,25,35,0.7);backdrop-filter:blur(4px);align-items:center;justify-content:center}
+.warn-overlay.show{display:flex}
+.warn-card{background:var(--white);border-radius:16px;padding:48px 56px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.2);max-width:380px;width:90%}
+.warn-icon{font-size:40px;margin-bottom:16px}
+.warn-title{font-size:20px;font-weight:600;color:var(--text);margin-bottom:8px}
+.warn-count{font-size:56px;font-weight:300;color:var(--orange);font-family:var(--mono);margin:16px 0;letter-spacing:-2px}
+.warn-sub{font-size:13px;color:var(--sub);margin-bottom:24px;line-height:1.6}
+.btn-primary{padding:11px 32px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.btn-primary:hover{background:var(--accent2)}
+
+/* Alert banner */
+.alert-banner{display:none;padding:10px 24px;font-size:13px;font-weight:500;text-align:center}
+.alert-banner.alarm{display:block;background:var(--red-bg);color:var(--red);border-bottom:1px solid var(--red-bd);animation:fade-pulse 0.8s ease-in-out infinite}
+.alert-banner.warn-mode{display:block;background:var(--orange-bg);color:var(--orange);border-bottom:1px solid var(--orange-bd);animation:fade-pulse 1.4s ease-in-out infinite}
+@keyframes fade-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* Main content */
+.content{flex:1;padding:24px;display:grid;grid-template-columns:1fr 300px;gap:20px;max-width:1200px;margin:0 auto;width:100%}
+.left{display:flex;flex-direction:column;gap:16px}
+.right{display:flex;flex-direction:column;gap:16px}
+
+/* Card */
+.card{background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.card-title-icon{width:22px;height:22px;border-radius:6px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:12px}
+.card-badge{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.card-body{padding:16px}
+
+/* Video */
+.video-wrap{position:relative;background:#0a0f16;aspect-ratio:16/10;border-radius:0}
+.video-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.video-overlay{position:absolute;bottom:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:flex-end;pointer-events:none}
+.vid-badge{background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);border-radius:5px;padding:4px 9px;font-size:11px;font-family:var(--mono);color:rgba(255,255,255,0.75);display:flex;align-items:center;gap:5px}
+.rec-dot{width:6px;height:6px;border-radius:50%;background:#ef4444;animation:pulse-dot 1s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* Status grid */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.stat-cell{background:var(--white);padding:12px 16px}
+.stat-label{font-size:11px;color:var(--muted);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:0.4px}
+.stat-value{font-size:15px;font-weight:600;color:var(--text);font-family:var(--mono)}
+.stat-value.green{color:var(--green)}
+.stat-value.orange{color:var(--orange)}
+.stat-value.red{color:var(--red)}
+.stat-value.blue{color:var(--accent)}
+
+/* Actor cards */
+.actor-list{padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.actor-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;border:1px solid var(--border);transition:border-color .2s}
+.actor-item.auth{border-left:3px solid var(--green)}
+.actor-item.unauth{border-left:3px solid var(--orange)}
+.actor-item.unk{border-left:3px solid var(--red)}
+.actor-item.flash{animation:item-flash .4s ease}
+@keyframes item-flash{0%,100%{background:var(--white)}50%{background:var(--off2)}}
+.actor-name{font-size:12px;font-weight:600}
+.actor-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.actor-item.auth .actor-name{color:var(--green)}
+.actor-item.unauth .actor-name{color:var(--orange)}
+.actor-item.unk .actor-name{color:var(--red)}
+.actor-count{font-size:24px;font-weight:600;font-family:var(--mono)}
+.actor-item.auth .actor-count{color:var(--green)}
+.actor-item.unauth .actor-count{color:var(--orange)}
+.actor-item.unk .actor-count{color:var(--red)}
+
+/* Event table */
+.ev-table{width:100%;border-collapse:collapse;font-size:12px}
+.ev-table th{padding:8px 12px;text-align:left;font-size:11px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:0.4px}
+.ev-table td{padding:8px 12px;border-bottom:1px solid var(--off2);color:var(--sub);cursor:pointer}
+.ev-table tr:hover td{background:var(--off)}
+.ev-table tr.new td{animation:row-in .25s ease}
+@keyframes row-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.ev-table td:last-child{text-align:right}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.badge.AUTHORIZED{background:var(--green-bg);color:var(--green)}
+.badge.UNAUTHORIZED{background:var(--orange-bg);color:var(--orange)}
+.badge.UNKNOWN{background:var(--red-bg);color:var(--red)}
+.badge.LOG_ONLY{background:#f0f9ff;color:#0369a1}
+.badge.ALERT{background:var(--orange-bg);color:var(--orange)}
+.badge.ALARM{background:var(--red-bg);color:var(--red)}
+
+/* Capture preview */
+.cap-section{padding:14px 16px}
+.cap-filename{font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:8px;word-break:break-all}
+.cap-img{width:100%;border-radius:6px;border:1px solid var(--border);display:none}
+
+/* Verify */
+.verify-section{padding:14px 16px}
+.input-wrap{position:relative;margin-bottom:10px}
+.input-wrap input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:7px;font-size:12px;font-family:var(--mono);color:var(--text);outline:none;background:var(--white);transition:border-color .15s}
+.input-wrap input:focus{border-color:var(--accent)}
+.input-wrap input::placeholder{color:var(--muted)}
+.btn-verify{width:100%;padding:9px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.btn-verify:hover{background:var(--accent2)}
+.verify-result{margin-top:10px;padding:9px 12px;border-radius:7px;font-size:12px;display:none;font-weight:500}
+.verify-result.ok{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);display:block}
+.verify-result.bad{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);display:block}
+
+/* Sys info */
+.sys-list{padding:12px 16px}
+.sys-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--off2);font-size:12px}
+.sys-row:last-child{border-bottom:none}
+.sys-row .key{color:var(--muted)}
+.sys-row .val{font-family:var(--mono);color:var(--text);font-weight:500}
+.sys-row .val.ok{color:var(--green)}
+</style>
+</head>
+<body>
+
+<!-- Warning overlay -->
+<div class="warn-overlay" id="warn-overlay">
+  <div class="warn-card">
+    <div class="warn-icon">⏱</div>
+    <div class="warn-title">Session Expiring</div>
+    <div class="warn-count" id="warn-count">30</div>
+    <div class="warn-sub">Re-scan your face to extend your session,<br>or you will be logged out automatically.</div>
+    <button class="btn-primary" onclick="doRescan()">Re-scan Face</button>
+  </div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔒</div>
+    <span class="logo-text">Secure<span>Vision</span></span>
+  </div>
+  <div class="header-center">
+    <div class="user-chip">{{ user }}</div>
+    <span style="font-size:11px;color:var(--muted)">since {{ login_time }}</span>
+  </div>
+  <div class="header-right">
+    <div class="session-wrap">
+      <span>Session</span>
+      <div class="session-bar-track"><div class="session-bar" id="session-bar"></div></div>
+      <span id="session-time" style="font-family:var(--mono);font-size:12px">5:00</span>
+    </div>
+    <div class="clock" id="clock">--:--:--</div>
+    <button class="btn-sm btn-ghost" onclick="doLogout()">Sign out</button>
+  </div>
+</header>
+
+<!-- Alert banner -->
+<div class="alert-banner" id="alert-banner"></div>
+
+<div class="content">
+  <div class="left">
+
+    <!-- Video feed -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-title-icon">📷</div>
+          Live Feed
+        </div>
+        <span class="card-badge" id="fps-badge">-- FPS</span>
+      </div>
+      <div class="video-wrap">
+        <img src="/video_feed_dashboard" alt="Live Feed">
+        <div class="video-overlay">
+          <div class="vid-badge"><div class="rec-dot"></div> REC · CAM-01</div>
+          <div class="vid-badge" id="vid-time">--:--:--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detection status -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-title-icon">⚡</div> Detection Status</div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-cell"><div class="stat-label">Person</div><div class="stat-value" id="s-person">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Category</div><div class="stat-value" id="s-cat">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Alert</div><div class="stat-value" id="s-alert">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Confidence</div><div class="stat-value blue" id="s-conf">—</div></div>
+        <div class="stat-cell"><div class="stat-label">FPS</div><div class="stat-value blue" id="s-fps">—</div></div>
+        <div class="stat-cell"><div class="stat-label">Uptime</div><div class="stat-value" id="s-uptime">—</div></div>
+      </div>
+    </div>
+
+    <!-- Event log -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-title-icon">📋</div> Event Log</div>
+        <span class="card-badge" id="ev-count">0 events</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="ev-table">
+          <thead><tr>
+            <th>Time</th><th>Person</th><th>Category</th><th>Alert</th>
+          </tr></thead>
+          <tbody id="ev-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="right">
+
+    <!-- Actor classification -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-title-icon">👤</div> Classification</div>
+      </div>
+      <div class="actor-list">
+        <div class="actor-item auth" id="card-auth">
+          <div><div class="actor-name">Authorized</div><div class="actor-sub">Access granted + watermarked</div></div>
+          <div class="actor-count" id="cnt-auth">0</div>
+        </div>
+        <div class="actor-item unauth" id="card-unauth">
+          <div><div class="actor-name">Unauthorized</div><div class="actor-sub">Alert + watermarked capture</div></div>
+          <div class="actor-count" id="cnt-unauth">0</div>
+        </div>
+        <div class="actor-item unk" id="card-unk">
+          <div><div class="actor-name">Unknown</div><div class="actor-sub">Alarm + capture + sound</div></div>
+          <div class="actor-count" id="cnt-unk">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last capture -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-title-icon">🖼</div> Last Capture</div>
+      </div>
+      <div class="cap-section">
+        <div class="cap-filename" id="cap-name">No capture yet</div>
+        <img class="cap-img" id="cap-img" src="" alt="capture">
+      </div>
+    </div>
+
+    <!-- Verify -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-title-icon">🔐</div> Verify Integrity</div>
+      </div>
+      <div class="verify-section">
+        <div class="input-wrap">
+          <input type="text" id="v-input" placeholder="filename.jpg">
+        </div>
+        <button class="btn-verify" onclick="doVerify()">Verify SHA-256</button>
+        <div class="verify-result" id="v-result"></div>
+      </div>
+    </div>
+
+    <!-- System info -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="card-title-icon">⚙</div> System</div>
+      </div>
+      <div class="sys-list">
+        <div class="sys-row"><span class="key">Camera</span><span class="val">CAM-01</span></div>
+        <div class="sys-row"><span class="key">Detection</span><span class="val">HOG + dlib</span></div>
+        <div class="sys-row"><span class="key">Recognition</span><span class="val ok">Deep Learning</span></div>
+        <div class="sys-row"><span class="key">Watermark</span><span class="val ok">DCT + SHA-256</span></div>
+        <div class="sys-row"><span class="key">Storage</span><span class="val">Local / GDPR</span></div>
+        <div class="sys-row"><span class="key">Uptime</span><span class="val" id="s-uptime2">—</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Clock
+  setInterval(()=>{
+    const t=new Date().toTimeString().slice(0,8);
+    document.getElementById('clock').textContent=t;
+    document.getElementById('vid-time').textContent=t;
+  },1000);
+
+  // Audio
+  const AC=window.AudioContext||window.webkitAudioContext;
+  function beep(type){
+    const ctx=new AC();
+    const freqs=type==='alarm'?[880,660,880,660]:[440,550];
+    freqs.forEach((f,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=f;o.type='square';
+      g.gain.setValueAtTime(.12,ctx.currentTime+i*.18);
+      g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.18+.16);
+      o.start(ctx.currentTime+i*.18);o.stop(ctx.currentTime+i*.18+.2);
+    });
+  }
+
+  // Session
+  let warnShown=false,warnCnt=30,warnInt=null;
+
+  async function pollSession(){
+    try{
+      const d=await(await fetch('/api/session')).json();
+      if(!d.authenticated){window.location.href='/';return;}
+      const rem=d.remaining,pct=(rem/300)*100;
+      const bar=document.getElementById('session-bar');
+      bar.style.width=pct+'%';
+      bar.style.background=rem<=60?(rem<=30?'var(--red)':'var(--orange)'):'var(--green)';
+      const m=Math.floor(rem/60),s=rem%60;
+      document.getElementById('session-time').textContent=m+':'+(s+'').padStart(2,'0');
+      if(d.warning&&!warnShown){
+        warnShown=true;warnCnt=rem;
+        document.getElementById('warn-overlay').classList.add('show');
+        document.getElementById('warn-count').textContent=warnCnt;
+        beep('warn');
+        warnInt=setInterval(()=>{
+          warnCnt--;
+          document.getElementById('warn-count').textContent=warnCnt;
+          if(warnCnt<=0){clearInterval(warnInt);window.location.href='/';}
+        },1000);
+      }
+      if(!d.warning&&warnShown){
+        warnShown=false;clearInterval(warnInt);
+        document.getElementById('warn-overlay').classList.remove('show');
+      }
+    }catch(e){}
+  }
+
+  async function doRescan(){
+    document.getElementById('warn-count').textContent='...';
+    try{
+      const d=await(await fetch('/api/rescan',{method:'POST'})).json();
+      if(d.action==='extended'){
+        clearInterval(warnInt);warnShown=false;
+        document.getElementById('warn-overlay').classList.remove('show');
+      }else window.location.href='/';
+    }catch(e){}
+  }
+
+  async function doLogout(){
+    await fetch('/api/logout',{method:'POST'});
+    window.location.href='/';
+  }
+
+  // Status polling
+  let prevCat='';
+  async function pollStatus(){
+    try{
+      const d=await(await fetch('/api/status')).json();
+      document.getElementById('s-person').textContent=d.person;
+      document.getElementById('s-conf').textContent=d.confidence>0?d.confidence+'%':'—';
+      document.getElementById('s-fps').textContent=d.fps||'—';
+      document.getElementById('s-uptime').textContent=d.uptime;
+      document.getElementById('s-uptime2').textContent=d.uptime;
+      document.getElementById('fps-badge').textContent=(d.fps||'--')+' FPS';
+
+      const ce=document.getElementById('s-cat');
+      const ae=document.getElementById('s-alert');
+      ce.className='stat-value';ae.className='stat-value';
+      ce.textContent=d.category;ae.textContent=d.alert_level;
+
+      const banner=document.getElementById('alert-banner');
+      if(d.alert_level==='ALARM'){
+        ce.classList.add('red');ae.classList.add('red');
+        banner.className='alert-banner alarm';
+        banner.textContent='⚠  Intruder alarm — unknown person detected';
+      }else if(d.alert_level==='ALERT'){
+        ce.classList.add('orange');ae.classList.add('orange');
+        banner.className='alert-banner warn-mode';
+        banner.textContent='△  Alert — unauthorized person detected';
+      }else{
+        ce.classList.add('green');ae.classList.add('green');
+        banner.className='alert-banner';
+      }
+
+      if(d.category!==prevCat&&d.category!=='—'){
+        const m={AUTHORIZED:'card-auth',UNAUTHORIZED:'card-unauth',UNKNOWN:'card-unk'};
+        const c=document.getElementById(m[d.category]);
+        if(c){c.classList.remove('flash');void c.offsetWidth;c.classList.add('flash');}
+        if(d.alert_level==='ALARM')beep('alarm');
+        prevCat=d.category;
+      }
+    }catch(e){}
+  }
+
+  async function pollStats(){
+    try{
+      const d=await(await fetch('/api/stats')).json();
+      document.getElementById('cnt-auth').textContent=d.AUTHORIZED||0;
+      document.getElementById('cnt-unauth').textContent=d.UNAUTHORIZED||0;
+      document.getElementById('cnt-unk').textContent=d.UNKNOWN||0;
+    }catch(e){}
+  }
+
+  let lastId=0;
+  async function pollEvents(){
+    try{
+      const evs=await(await fetch('/api/events')).json();
+      document.getElementById('ev-count').textContent=evs.length+' events';
+      const tbody=document.getElementById('ev-body');
+      tbody.innerHTML='';
+      evs.slice(0,10).forEach(ev=>{
+        const tr=document.createElement('tr');
+        tr.className=ev.id>lastId?'new':'';
+        tr.innerHTML=`
+          <td>${(ev.timestamp||'').slice(11,19)}</td>
+          <td style="font-weight:500;color:var(--text)">${ev.person_name}</td>
+          <td><span class="badge ${ev.category}">${ev.category}</span></td>
+          <td><span class="badge ${ev.alert_level}">${ev.alert_level}</span></td>`;
+        tr.onclick=()=>{document.getElementById('v-input').value=ev.image_path;};
+        tbody.appendChild(tr);
+      });
+      if(evs.length>0){
+        lastId=Math.max(...evs.map(e=>e.id));
+        document.getElementById('cap-name').textContent=evs[0].image_path;
+        const img=document.getElementById('cap-img');
+        img.src='/captures/'+evs[0].image_path;
+        img.style.display='block';
+        if(!document.getElementById('v-input').value)
+          document.getElementById('v-input').placeholder=evs[0].image_path;
+      }
+    }catch(e){}
+  }
+
+  async function doVerify(){
+    const fn=document.getElementById('v-input').value.trim()||document.getElementById('v-input').placeholder;
+    if(!fn)return;
+    const res=document.getElementById('v-result');
+    res.style.display='block';res.className='verify-result';res.textContent='Checking...';
+    try{
+      const d=await(await fetch('/api/verify',{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({filename:fn})})).json();
+      res.className='verify-result '+(d.valid?'ok':'bad');
+      res.textContent=d.valid?'✓  Valid — image not tampered':'✗  Modified — hash mismatch';
+    }catch(e){res.className='verify-result bad';res.textContent='Error';}
+  }
+
+  document.getElementById('v-input').addEventListener('keydown',e=>{if(e.key==='Enter')doVerify();});
+
+  pollStatus();pollStats();pollEvents();pollSession();
+  setInterval(pollStatus,900);setInterval(pollStats,3000);
+  setInterval(pollEvents,2000);setInterval(pollSession,1000);
+</script>
+</body>
+</html>

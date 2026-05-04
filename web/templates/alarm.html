@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SecureVision — Security Alarm</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--sans:'Inter',sans-serif;--mono:'DM Mono',monospace;--red:#dc2626;--red-bg:#fef2f2;--red-bd:#fecaca;--text:#0f1923;--sub:#5c6b7a;--muted:#9ba8b4;--border:#e4e7ec;--white:#fff;--off:#f7f8fa;--accent:#1a56db}
+body{font-family:var(--sans);background:var(--red-bg);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--white);border-bottom:1px solid var(--red-bd);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-icon{width:30px;height:30px;background:var(--red);border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;animation:pulse .6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.logo-text{font-size:14px;font-weight:600;color:var(--text)}
+.logo-text span{color:var(--red)}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.container{width:100%;max-width:480px}
+.card{background:var(--white);border:2px solid var(--red-bd);border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(220,38,38,0.12),0 1px 3px rgba(0,0,0,0.08)}
+.card-top{background:var(--red-bg);border-bottom:2px solid var(--red-bd);padding:32px;text-align:center}
+.alarm-icon{width:72px;height:72px;background:white;border:2px solid var(--red-bd);border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 20px;animation:icon-pulse .6s ease-in-out infinite}
+@keyframes icon-pulse{0%,100%{border-color:var(--red-bd);box-shadow:none}50%{border-color:var(--red);box-shadow:0 0 0 4px rgba(220,38,38,0.12)}}
+.card-top h1{font-size:24px;font-weight:600;color:var(--red);margin-bottom:8px;letter-spacing:-0.5px}
+.card-top p{font-size:14px;color:var(--sub)}
+.card-body{padding:24px}
+.capture-wrap{border-radius:8px;overflow:hidden;border:1px solid var(--red-bd);margin-bottom:20px;display:none}
+.capture-wrap img{width:100%;display:block}
+.capture-label{padding:8px 12px;background:var(--red-bg);font-size:11px;color:var(--red);font-family:var(--mono)}
+.info-list{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}
+.info-row{display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;border-bottom:1px solid var(--off);background:var(--white)}
+.info-row:last-child{border-bottom:none}
+.info-row .k{color:var(--muted)}
+.info-row .v{font-weight:500;color:var(--text);font-family:var(--mono)}
+.btn{display:block;width:100%;padding:12px;text-align:center;background:var(--red);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;font-family:var(--sans);transition:all .15s}
+.btn:hover{background:#b91c1c;transform:translateY(-1px)}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><div class="logo-icon">⚠</div><span class="logo-text">Secure<span>Vision</span></span></a>
+  <span style="font-size:12px;color:var(--red);font-weight:500">SECURITY ALARM ACTIVE</span>
+</header>
+<main>
+<div class="container">
+<div class="card">
+  <div class="card-top">
+    <div class="alarm-icon">⚠</div>
+    <h1>Security Alarm</h1>
+    <p>Unknown person detected — identity not in database</p>
+  </div>
+  <div class="card-body">
+    <div class="capture-wrap" id="cap-wrap">
+      <img id="cap-img" src="" alt="Capture">
+      <div class="capture-label">Evidence capture · DCT watermarked · SHA-256 verified</div>
+    </div>
+    <div class="info-list" id="info-list">
+      <div class="info-row"><span class="k">Status</span><span class="v" style="color:var(--red)">UNKNOWN — Alarm raised</span></div>
+      <div class="info-row"><span class="k">Action</span><span class="v">Capture saved as evidence</span></div>
+      <div class="info-row"><span class="k">Integrity</span><span class="v">DCT + SHA-256 verified</span></div>
+    </div>
+    <a href="/" class="btn">Back to Login</a>
+  </div>
+</div>
+</div>
+</main>
+<script>
+const AC=window.AudioContext||window.webkitAudioContext;
+const ctx=new AC();
+[880,0,880,0,880,660].forEach((f,i)=>{
+  if(!f)return;
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.connect(g);g.connect(ctx.destination);
+  o.frequency.value=f;o.type='square';
+  g.gain.setValueAtTime(.15,ctx.currentTime+i*.14);
+  g.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+i*.14+.12);
+  o.start(ctx.currentTime+i*.14);o.stop(ctx.currentTime+i*.14+.14);
+});
+async function load(){
+  try{
+    const evs=await(await fetch('/api/events')).json();
+    const last=evs.find(e=>e.category==='UNKNOWN');
+    if(!last)return;
+    const img=document.getElementById('cap-img');
+    img.src='/captures/'+last.image_path;
+    img.onload=()=>document.getElementById('cap-wrap').style.display='block';
+    document.getElementById('info-list').innerHTML=`
+      <div class="info-row"><span class="k">Detected at</span><span class="v">${last.timestamp}</span></div>
+      <div class="info-row"><span class="k">Camera</span><span class="v">${last.camera_id}</span></div>
+      <div class="info-row"><span class="k">Status</span><span class="v" style="color:var(--red)">UNKNOWN — Alarm raised</span></div>
+      <div class="info-row"><span class="k">Evidence</span><span class="v">DCT watermarked + SHA-256</span></div>`;
+  }catch(e){}
+}
+load();
+</script>
+</body>
+</html>
